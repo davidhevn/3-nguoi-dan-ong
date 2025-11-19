@@ -3,218 +3,557 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rắn Săn Mồi - Chuột</title>
+  <title>Neon Snake - Săn Hoa Quả</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --primary: #00ff88;
+      --secondary: #00ccff;
+      --bg: #111;
+      --surface: rgba(255, 255, 255, 0.1);
     }
-    html, body {
-      height: 100%;
+
+    * { box-sizing: border-box; user-select: none; }
+
+    body {
       margin: 0;
-      background: #050505;
+      padding: 0;
+      background-color: #0a0a0a;
+      color: white;
+      font-family: 'Poppins', sans-serif;
       overflow: hidden;
-      font-family: "Segoe UI", Arial, sans-serif;
-      color: #f8f8f8;
     }
+
     canvas {
       display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
     }
-    .overlay {
-      position: fixed;
-      inset: 0;
+
+    /* UI Overlay Styling */
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: rgba(5, 5, 5, 0.8);
-      flex-direction: column;
-      gap: 12px;
+      align-items: center;
       pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+    }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      padding: 2rem 3rem;
+      border-radius: 24px;
       text-align: center;
-    }
-    .overlay.visible {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
       pointer-events: auto;
-      opacity: 1;
+      display: none; /* Hidden by default */
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      max-width: 400px;
+      width: 90%;
     }
+
+    .panel.active { display: block; }
+
+    h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: 3rem;
+      margin: 0 0 10px 0;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    h2 { margin-top: 0; color: #ccc; font-weight: 400; }
+
+    input {
+      width: 100%;
+      padding: 12px 20px;
+      margin: 15px 0;
+      border-radius: 12px;
+      border: 2px solid #333;
+      background: #1a1a1a;
+      color: white;
+      font-size: 1.1rem;
+      text-align: center;
+      outline: none;
+      transition: 0.3s;
+    }
+    
+    input:focus { border-color: var(--primary); }
+
     button {
-      padding: 10px 22px;
+      background: linear-gradient(135deg, var(--primary), #00cc6a);
+      color: #000;
       border: none;
-      border-radius: 999px;
-      background: #f7a531;
-      color: #050505;
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 12px 30px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 50px;
       cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+      width: 100%;
     }
+
     button:hover {
-      filter: brightness(1.05);
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+    }
+
+    /* HUD */
+    .hud {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 5;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+
+    .score-val { color: var(--primary); }
+
+    /* Leaderboard */
+    .leaderboard {
+      margin-top: 15px;
+      text-align: left;
+      background: rgba(0,0,0,0.3);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    .lb-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-rank { color: #888; margin-right: 8px; }
+    .lb-name { font-weight: 600; color: #fff; }
+    .lb-score { color: var(--secondary); }
+
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <canvas id="game"></canvas>
-  <div id="overlay" class="overlay">
-    <h1>Bạn đã tự cắn đuôi!</h1>
-    <p>Bấm nút dưới để chơi lại.</p>
-    <button id="restart">Chơi lại</button>
-  </div>
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    const overlay = document.getElementById("overlay");
-    const restartBtn = document.getElementById("restart");
 
-    const settings = {
-      speed: 4,
-      segmentDistance: 18,
-      initialSegments: 15,
-      growthPerFood: 6,
-      foodRadius: 12
+  <canvas id="gameCanvas"></canvas>
+
+  <div class="hud">
+    Điểm: <span id="currentScore" class="score-val">0</span>
+  </div>
+
+  <div class="ui-layer">
+    
+    <div id="startScreen" class="panel active">
+      <h1>Rắn Săn Mồi</h1>
+      <h2>Neon Fruit Hunter</h2>
+      <input type="text" id="playerNameInput" placeholder="Nhập tên của bạn..." maxlength="10">
+      <button onclick="startGame()">Bắt đầu chơi</button>
+    </div>
+
+    <div id="gameOverScreen" class="panel">
+      <h1 style="font-size: 2.5rem; color: #ff4d4d;">Game Over!</h1>
+      <p>Bạn đã tự cắn vào đuôi mình.</p>
+      <div style="font-size: 1.5rem; margin-bottom: 10px;">
+        Điểm: <span id="finalScore" class="score-val">0</span>
+      </div>
+      
+      <div class="leaderboard" id="leaderboardList">
+        </div>
+
+      <button onclick="restartGame()" style="margin-top: 15px; background: linear-gradient(135deg, #ffaa00, #ff7700);">Chơi lại</button>
+    </div>
+
+  </div>
+
+  <script>
+    /* --- CẤU HÌNH GAME --- */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const config = {
+      snakeColor: '#00ff88',
+      snakeShadow: '#00ff88',
+      snakeSpeed: 4,
+      segmentDist: 10, // Khoảng cách giữa các đốt trơn mượt hơn
+      baseRadius: 10,
+      growth: 5,
+      fruits: ['🍎', '🍌', '🍇', '🍉', '🍓', '🍒', '🍑', '🍍'],
+      gridSize: 40
     };
 
-    let pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    /* --- BIẾN TOÀN CỤC --- */
     let snake = [];
-    let food = null;
-    let gameOver = false;
+    let foods = []; // Mảng chứa thức ăn (có thể nhiều quả cùng lúc nếu muốn)
+    let particles = []; // Hiệu ứng nổ
+    let score = 0;
+    let isPlaying = false;
+    let mouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+    let currentPlayer = "Khách";
+    let animationId;
+
+    /* --- KHỞI TẠO UI & EVENT --- */
+    const uiStart = document.getElementById('startScreen');
+    const uiGameOver = document.getElementById('gameOverScreen');
+    const scoreDisplay = document.getElementById('currentScore');
+    const finalScoreDisplay = document.getElementById('finalScore');
+    const lbList = document.getElementById('leaderboardList');
+    const nameInput = document.getElementById('playerNameInput');
+
+    // Tự động điền tên lần cuối
+    const savedName = localStorage.getItem('snake_last_name');
+    if(savedName) nameInput.value = savedName;
+
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('mousemove', e => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
 
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
+    resizeCanvas();
 
-    function initSnake() {
+    /* --- LOGIC GAME --- */
+
+    function startGame() {
+      const name = nameInput.value.trim() || "Anonymous";
+      currentPlayer = name;
+      localStorage.setItem('snake_last_name', name);
+
+      uiStart.classList.remove('active');
+      uiGameOver.classList.remove('active');
+      
+      resetGame();
+      isPlaying = true;
+      loop();
+    }
+
+    function restartGame() {
+      uiGameOver.classList.remove('active');
+      resetGame();
+      isPlaying = true;
+      loop();
+    }
+
+    function resetGame() {
+      score = 0;
+      scoreDisplay.innerText = score;
       snake = [];
-      const start = { x: canvas.width / 2, y: canvas.height / 2 };
-      for (let i = 0; i < settings.initialSegments; i++) {
-        snake.push({ x: start.x - i * settings.segmentDistance, y: start.y });
+      particles = [];
+      foods = [];
+
+      // Tạo rắn ban đầu
+      let startX = canvas.width / 2;
+      let startY = canvas.height / 2;
+      for(let i=0; i<20; i++) {
+        snake.push({ x: startX, y: startY + i * config.segmentDist });
       }
+
+      spawnFood();
     }
 
     function spawnFood() {
-      const margin = 40;
-      food = {
-        x: margin + Math.random() * (canvas.width - 2 * margin),
-        y: margin + Math.random() * (canvas.height - 2 * margin)
-      };
-    }
-
-    function distance(a, b) {
-      const dx = a.x - b.x;
-      const dy = a.y - b.y;
-      return Math.hypot(dx, dy);
-    }
-
-    function updatePointer(e) {
-      pointer.x = e.clientX;
-      pointer.y = e.clientY;
-    }
-
-    function gameLoop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (!gameOver) {
-        moveSnake();
-        checkFood();
-        checkSelfCollision();
+      // Đảm bảo thức ăn không sinh ra ngay trên thân rắn hoặc sát mép
+      let valid = false;
+      let f;
+      while(!valid) {
+        f = {
+          x: Math.random() * (canvas.width - 100) + 50,
+          y: Math.random() * (canvas.height - 100) + 50,
+          emoji: config.fruits[Math.floor(Math.random() * config.fruits.length)],
+          size: 28,
+          angle: (Math.random() - 0.5) * 0.5 // Góc nghiêng nhẹ
+        };
+        
+        // Check khoảng cách đầu rắn
+        const distHead = Math.hypot(f.x - snake[0].x, f.y - snake[0].y);
+        if (distHead > 100) valid = true;
       }
+      foods = [f]; // Hiện tại chỉ 1 quả 1 lúc
+    }
 
+    function gameOver() {
+      isPlaying = false;
+      cancelAnimationFrame(animationId);
+      
+      finalScoreDisplay.innerText = score;
+      saveHighScore(currentPlayer, score);
+      renderLeaderboard();
+      
+      uiGameOver.classList.add('active');
+    }
+
+    /* --- VÒNG LẶP CHÍNH (GAME LOOP) --- */
+    function loop() {
+      if (!isPlaying) return;
+
+      // 1. Update Logic
+      updateSnake();
+      checkCollisions();
+      updateParticles();
+
+      // 2. Render
+      drawBackground();
       drawFood();
       drawSnake();
-      requestAnimationFrame(gameLoop);
+      drawParticles();
+
+      animationId = requestAnimationFrame(loop);
     }
 
-    function moveSnake() {
+    /* --- CẬP NHẬT LOGIC --- */
+    function updateSnake() {
       const head = snake[0];
-      let dx = pointer.x - head.x;
-      let dy = pointer.y - head.y;
-      const dist = Math.hypot(dx, dy) || 1;
+      
+      // Tính toán góc và vector di chuyển về phía chuột
+      const dx = mouse.x - head.x;
+      const dy = mouse.y - head.y;
+      const dist = Math.hypot(dx, dy); // Khoảng cách từ đầu đến chuột
+      
+      // Nếu gần chuột quá thì đi chậm lại hoặc dừng để đỡ rung
+      const speed = dist < 10 ? dist * 0.1 : config.snakeSpeed;
 
-      const moveX = (dx / dist) * settings.speed;
-      const moveY = (dy / dist) * settings.speed;
+      const angle = Math.atan2(dy, dx);
+      
+      // Di chuyển đầu
+      head.x += Math.cos(angle) * speed;
+      head.y += Math.sin(angle) * speed;
+      head.angle = angle; // Lưu góc để vẽ mắt
 
-      head.x += moveX;
-      head.y += moveY;
-
-      for (let i = 1; i < snake.length; i++) {
-        const prev = snake[i - 1];
-        const segment = snake[i];
-        dx = prev.x - segment.x;
-        dy = prev.y - segment.y;
-        const segDist = Math.hypot(dx, dy) || 1;
-        const desired = segDist - settings.segmentDistance;
-        if (desired > 0) {
-          segment.x += (dx / segDist) * desired;
-          segment.y += (dy / segDist) * desired;
+      // Kéo thân theo đầu (IK - Inverse Kinematics đơn giản)
+      for(let i=1; i<snake.length; i++) {
+        const prev = snake[i-1];
+        const curr = snake[i];
+        
+        const dxs = prev.x - curr.x;
+        const dys = prev.y - curr.y;
+        const d = Math.hypot(dxs, dys);
+        
+        // Nếu khoảng cách lớn hơn cho phép, kéo đốt về phía đốt trước
+        if (d > config.segmentDist) {
+          const t = config.segmentDist / d;
+          curr.x = prev.x - dxs * t; // lerp
+          curr.y = prev.y - dys * t;
+        } else {
+            // Hiệu ứng dồn lại khi đứng yên
+             if(speed < 1 && d < config.segmentDist) {
+                 curr.x += (prev.x - curr.x) * 0.1;
+                 curr.y += (prev.y - curr.y) * 0.1;
+             }
         }
       }
     }
 
-    function drawSnake() {
-      for (let i = snake.length - 1; i >= 0; i--) {
-        const part = snake[i];
-        const t = i / snake.length;
-        const radius = 6 + (1 - t) * 8;
-        ctx.beginPath();
-        ctx.fillStyle = `hsl(${140 - t * 40}, 80%, ${40 + t * 30}%)`;
-        ctx.arc(part.x, part.y, radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    function drawFood() {
-      if (!food) return;
-      ctx.beginPath();
-      ctx.fillStyle = "#ff4d6d";
-      ctx.shadowColor = "#ff99aa";
-      ctx.shadowBlur = 12;
-      ctx.arc(food.x, food.y, settings.foodRadius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-
-    function checkFood() {
-      if (!food) return;
-      if (distance(snake[0], food) < settings.foodRadius + 8) {
-        for (let i = 0; i < settings.growthPerFood; i++) {
-          const tail = snake[snake.length - 1];
-          snake.push({ x: tail.x, y: tail.y });
-        }
-        spawnFood();
-      }
-    }
-
-    function checkSelfCollision() {
+    function checkCollisions() {
       const head = snake[0];
-      for (let i = 8; i < snake.length; i++) {
-        if (distance(head, snake[i]) < 10) {
-          triggerGameOver();
+
+      // 1. Ăn thức ăn
+      for(let i = foods.length - 1; i >= 0; i--) {
+        const f = foods[i];
+        const dist = Math.hypot(head.x - f.x, head.y - f.y);
+        
+        if (dist < f.size) {
+          // Ăn được
+          score += 10;
+          scoreDisplay.innerText = score;
+          
+          // Thêm đốt
+          const tail = snake[snake.length-1];
+          for(let k=0; k<config.growth; k++){
+            snake.push({x: tail.x, y: tail.y});
+          }
+
+          // Tạo hiệu ứng nổ
+          createParticles(f.x, f.y, f.emoji);
+
+          // Xóa quả cũ, tạo quả mới
+          foods.splice(i, 1);
+          spawnFood();
+        }
+      }
+
+      // 2. Cắn đuôi (Chỉ kiểm tra từ đốt thứ 10 trở đi để tránh lỗi khi quay đầu gấp)
+      for(let i=15; i<snake.length; i++) {
+        const seg = snake[i];
+        const dist = Math.hypot(head.x - seg.x, head.y - seg.y);
+        if (dist < config.baseRadius) {
+          gameOver();
           break;
         }
       }
     }
 
-    function triggerGameOver() {
-      gameOver = true;
-      overlay.classList.add("visible");
+    function createParticles(x, y, color) {
+      for(let i=0; i<10; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 10,
+          vy: (Math.random() - 0.5) * 10,
+          life: 1.0,
+          color: color // thực ra là text emoji, nhưng ta vẽ mờ đi
+        });
+      }
     }
 
-    function resetGame() {
-      gameOver = false;
-      overlay.classList.remove("visible");
-      initSnake();
-      spawnFood();
+    function updateParticles() {
+      for(let i=particles.length-1; i>=0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+        if(p.life <= 0) particles.splice(i, 1);
+      }
     }
 
-    window.addEventListener("mousemove", updatePointer);
-    window.addEventListener("resize", resizeCanvas);
-    restartBtn.addEventListener("click", resetGame);
+    /* --- VẼ ĐỒ HỌA (RENDER) --- */
+    
+    function drawBackground() {
+      // Xóa màn hình
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Vẽ lưới
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 1;
+      
+      // Hiệu ứng lưới di chuyển nhẹ theo rắn để tạo cảm giác camera
+      const offsetX = -snake[0].x * 0.1;
+      const offsetY = -snake[0].y * 0.1;
 
-    resizeCanvas();
-    initSnake();
-    spawnFood();
-    requestAnimationFrame(gameLoop);
+      ctx.beginPath();
+      for (let x = offsetX % config.gridSize; x < canvas.width; x += config.gridSize) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+      }
+      for (let y = offsetY % config.gridSize; y < canvas.height; y += config.gridSize) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+      }
+      ctx.stroke();
+    }
+
+    function drawFood() {
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = 'white';
+      foods.forEach(f => {
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        ctx.rotate(f.angle + Date.now()/500); // Xoay nhẹ
+        ctx.font = `${f.size}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(f.emoji, 0, 0);
+        ctx.restore();
+      });
+      ctx.shadowBlur = 0;
+    }
+
+    function drawSnake() {
+      if(snake.length === 0) return;
+
+      // Vẽ thân
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = config.snakeShadow;
+      
+      // Vẽ các đốt từ đuôi lên đầu
+      for(let i=snake.length-1; i>=0; i--) {
+        const s = snake[i];
+        // Kích thước giảm dần về đuôi
+        const radius = config.baseRadius + (1 - i/snake.length) * 2;
+        
+        ctx.beginPath();
+        // Màu gradient theo chiều dài
+        const hue = (140 + (i * 2)) % 360; 
+        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+        ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Vẽ đầu (Chi tiết hơn)
+      const head = snake[0];
+      const angle = head.angle || 0;
+      
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = '#fff'; // Mắt trắng
+      
+      // Tính vị trí mắt dựa trên góc xoay
+      const eyeOffset = 6;
+      const eyeX1 = head.x + Math.cos(angle - 0.8) * eyeOffset;
+      const eyeY1 = head.y + Math.sin(angle - 0.8) * eyeOffset;
+      const eyeX2 = head.x + Math.cos(angle + 0.8) * eyeOffset;
+      const eyeY2 = head.y + Math.sin(angle + 0.8) * eyeOffset;
+
+      ctx.beginPath(); ctx.arc(eyeX1, eyeY1, 4, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(eyeX2, eyeY2, 4, 0, Math.PI*2); ctx.fill();
+
+      // Con ngươi đen
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(eyeX1 + Math.cos(angle)*1.5, eyeY1 + Math.sin(angle)*1.5, 2, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(eyeX2 + Math.cos(angle)*1.5, eyeY2 + Math.sin(angle)*1.5, 2, 0, Math.PI*2); ctx.fill();
+
+      ctx.shadowBlur = 0;
+    }
+
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.font = "12px Arial";
+        ctx.fillText("✨", p.x, p.y);
+        ctx.globalAlpha = 1;
+      });
+    }
+
+    /* --- LEADERBOARD (LOCAL STORAGE) --- */
+    function saveHighScore(name, score) {
+      let scores = JSON.parse(localStorage.getItem('snake_scores')) || [];
+      scores.push({ name, score });
+      // Sắp xếp giảm dần
+      scores.sort((a, b) => b.score - a.score);
+      // Giữ top 5
+      scores = scores.slice(0, 5);
+      localStorage.setItem('snake_scores', JSON.stringify(scores));
+    }
+
+    function renderLeaderboard() {
+      const scores = JSON.parse(localStorage.getItem('snake_scores')) || [];
+      lbList.innerHTML = "";
+      
+      if (scores.length === 0) {
+        lbList.innerHTML = "<div style='text-align:center; color:#888'>Chưa có kỷ lục</div>";
+        return;
+      }
+
+      scores.forEach((s, index) => {
+        const row = document.createElement('div');
+        row.className = 'lb-row';
+        row.innerHTML = `
+          <span><span class="lb-rank">#${index + 1}</span> <span class="lb-name">${s.name}</span></span>
+          <span class="lb-score">${s.score}</span>
+        `;
+        lbList.appendChild(row);
+      });
+    }
+
   </script>
 </body>
 </html>
-
