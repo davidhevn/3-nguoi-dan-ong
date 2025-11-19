@@ -2,716 +2,187 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Snake Pro - Battle Royale</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <title>Snake Online Multiplayer</title>
   <style>
-    :root {
-      --primary: #00ff88;
-      --secondary: #00ccff;
-      --danger: #ff4d4d;
-      --gold: #ffd700;
-    }
-
-    * { box-sizing: border-box; user-select: none; }
-
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #0a0a0a;
-      color: white;
-      font-family: 'Poppins', sans-serif;
-      overflow: hidden;
-    }
-
-    canvas {
-      display: block;
-    }
-
-    /* --- UI Overlay --- */
-    .ui-layer {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      z-index: 10;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      pointer-events: none;
-    }
-
-    .panel {
-      background: rgba(15, 23, 42, 0.9);
-      backdrop-filter: blur(15px);
-      padding: 2.5rem;
-      border-radius: 24px;
-      text-align: center;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 0 50px rgba(0, 255, 136, 0.2);
-      pointer-events: auto;
-      display: none;
-      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      min-width: 350px;
-    }
-    .panel.active { display: block; }
-
-    h1 {
-      font-family: 'Fredoka One', cursive;
-      font-size: 3.5rem;
-      margin: 0;
-      background: linear-gradient(to bottom, #fff, var(--primary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 10px rgba(0,255,136,0.5));
-    }
-
-    input {
-      width: 100%;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 12px;
-      border: 2px solid #333;
-      background: #111;
-      color: white;
-      font-size: 1.2rem;
-      text-align: center;
-      outline: none;
-      transition: 0.3s;
-    }
-    input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
-
-    button {
-      background: linear-gradient(90deg, var(--primary), #00cc6a);
-      color: #000;
-      border: none;
-      padding: 15px 40px;
-      font-size: 1.2rem;
-      font-weight: 800;
-      border-radius: 50px;
-      cursor: pointer;
-      width: 100%;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      transition: transform 0.1s;
-    }
-    button:hover { transform: scale(1.02); filter: brightness(1.1); }
-    button:active { transform: scale(0.98); }
-
-    /* --- HUD --- */
-    .hud-container {
-      position: absolute;
-      top: 20px; left: 20px;
-      pointer-events: none;
-      z-index: 5;
-    }
-
-    .score-box {
-      font-family: 'Fredoka One', cursive;
-      font-size: 2rem;
-      text-shadow: 3px 3px 0px rgba(0,0,0,0.5);
-    }
-    .score-val { color: var(--primary); }
-
-    /* Thanh trạng thái Buff */
-    .buff-bar {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
-    }
-    .buff-item {
-      background: rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.2);
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .buff-item.active { opacity: 1; }
-
-    /* Hướng dẫn điều khiển */
-    .controls-hint {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: rgba(255,255,255,0.6);
-      font-size: 0.9rem;
-      z-index: 5;
-      pointer-events: none;
-    }
-
-    .key {
-      background: rgba(255,255,255,0.2);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: bold;
-      color: #fff;
-    }
-
-    /* --- Leaderboard --- */
-    .leaderboard { margin-top: 20px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; }
-    .lb-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .lb-rank { color: var(--gold); font-weight: bold; width: 25px; }
-    .lb-score { color: var(--secondary); font-weight: bold; }
-
-    @keyframes popIn { from {transform: scale(0.8); opacity:0;} to {transform: scale(1); opacity:1;} }
+    /* Giữ nguyên CSS cũ hoặc tùy chỉnh thêm */
+    body { margin: 0; background: #0a0a0a; overflow: hidden; color: white; font-family: sans-serif; }
+    canvas { display: block; }
+    .ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #00ff88; border: none; border-radius: 5px; }
+    input { padding: 10px; font-size: 1.1rem; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-  <canvas id="gameCanvas"></canvas>
+<canvas id="gameCanvas"></canvas>
 
-  <div class="hud-container">
-    <div class="score-box">Điểm: <span id="currentScore" class="score-val">0</span></div>
-    <div class="buff-bar">
-      <div id="buffMagnet" class="buff-item" style="color: #00ccff;">🧲 HÚT</div>
-      <div id="buffDouble" class="buff-item" style="color: #ffd700;">⚡ x2 ĐIỂM</div>
-    </div>
-  </div>
+<div id="startScreen" class="ui">
+  <h1>SNAKE ONLINE (PYTHON SERVER)</h1>
+  <input type="text" id="username" placeholder="Nhập tên..." value="Player1">
+  <br>
+  <button onclick="joinGame()">THAM GIA</button>
+  <p style="color: #888; font-size: 0.9rem">Đảm bảo chạy server.py trước!</p>
+</div>
 
-  <div class="controls-hint">
-    Giữ <span class="key">Chuột Trái</span> hoặc <span class="key">Space</span> để TĂNG TỐC
-  </div>
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-  <div class="ui-layer">
-    <div id="startScreen" class="panel active">
-      <h1>NEON SNAKE</h1>
-      <p style="color:#ccc; margin-bottom:20px;">Săn mồi - Né bom - Tăng tốc</p>
-      <input type="text" id="playerNameInput" placeholder="Nhập tên chiến binh..." maxlength="12">
-      <button onclick="startGame()">Vào Game</button>
-    </div>
+  // --- CẤU HÌNH ---
+  const WEBSOCKET_URL = "ws://localhost:8765"; 
+  
+  // --- TRẠNG THÁI GAME ---
+  let socket;
+  let myId = null; // Server không cần gửi ID về, ta tự quản lý qua kết nối, nhưng client cần biết ID của địch
+  let isPlaying = false;
+  
+  let mySnake = { x: 500, y: 500, angle: 0, body: [], name: "", skin: "#00ff88" };
+  let otherSnakes = {}; // Lưu đối thủ: { "user_1234": {x, y, body...} }
+  
+  let mouse = { x: 0, y: 0 };
 
-    <div id="gameOverScreen" class="panel">
-      <h1 style="font-size: 2.5rem; color: var(--danger);">THẤT BẠI!</h1>
-      <p id="deathReason" style="color: #aaa; font-style: italic;">Bạn đã đâm vào tường</p>
-      <div style="font-size: 1.8rem; margin: 15px 0; color: white;">
-        Điểm: <span id="finalScore" style="color: var(--primary)">0</span>
-      </div>
-      <div class="leaderboard" id="leaderboardList"></div>
-      <button onclick="restartGame()" style="margin-top: 20px; background: white; color: black;">Chơi Lại</button>
-    </div>
-  </div>
+  // --- KẾT NỐI SOCKET ---
+  function joinGame() {
+    const name = document.getElementById('username').value;
+    mySnake.name = name;
 
-  <script>
-    /* --- CẤU HÌNH --- */
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    socket = new WebSocket(WEBSOCKET_URL);
 
-    const config = {
-      baseSpeed: 3.5,
-      boostSpeed: 8,
-      turnSpeed: 0.15, // Độ mượt khi quay đầu
-      segmentDist: 8,
-      baseRadius: 12,
-      growth: 4,
-      fruits: ['🍎', '🍉', '🍇', '🍓', '🍑', '🍍', '🥝'],
-      mineCount: 5, // Số lượng bom tối đa
-      gridSize: 50
-    };
-
-    /* --- TRẠNG THÁI GAME --- */
-    let snake = [];
-    let foods = [];
-    let mines = [];
-    let powerups = [];
-    let particles = [];
-    
-    let score = 0;
-    let isPlaying = false;
-    let frameCount = 0;
-    
-    // Input
-    let mouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
-    let isBoosting = false; // Trạng thái tăng tốc
-    let camShake = 0; // Rung màn hình
-
-    // Player info
-    let currentPlayer = "Guest";
-    let buffs = {
-      magnet: 0,  // Thời gian còn lại (frames)
-      double: 0   // Thời gian còn lại (frames)
-    };
-
-    /* --- KHỞI TẠO --- */
-    const uiStart = document.getElementById('startScreen');
-    const uiGameOver = document.getElementById('gameOverScreen');
-    const scoreDisplay = document.getElementById('currentScore');
-    const finalScoreDisplay = document.getElementById('finalScore');
-    const deathMsg = document.getElementById('deathReason');
-    const nameInput = document.getElementById('playerNameInput');
-    
-    // Auto-load name
-    if(localStorage.getItem('snake_last_name')) {
-      nameInput.value = localStorage.getItem('snake_last_name');
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-    window.addEventListener('mousedown', () => isBoosting = true);
-    window.addEventListener('mouseup', () => isBoosting = false);
-    window.addEventListener('keydown', e => { if(e.code === 'Space') isBoosting = true; });
-    window.addEventListener('keyup', e => { if(e.code === 'Space') isBoosting = false; });
-
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    resizeCanvas();
-
-    /* --- GAME LOOP & LOGIC --- */
-    function startGame() {
-      const name = nameInput.value.trim() || "Vô Danh";
-      currentPlayer = name;
-      localStorage.setItem('snake_last_name', name);
-      
-      uiStart.classList.remove('active');
-      uiGameOver.classList.remove('active');
-      resetGame();
-      loop();
-    }
-
-    function restartGame() {
-      startGame(); // Tái sử dụng hàm start
-    }
-
-    function resetGame() {
+    socket.onopen = () => {
+      console.log("Đã kết nối tới Server Python!");
+      document.getElementById('startScreen').style.display = 'none';
       isPlaying = true;
-      score = 0;
-      scoreDisplay.innerText = "0";
-      snake = [];
-      foods = [];
-      mines = [];
-      powerups = [];
-      particles = [];
-      buffs = { magnet: 0, double: 0 };
-      isBoosting = false;
-      camShake = 0;
+      initMySnake();
+      loop();
+    };
 
-      // Tạo rắn
-      let cx = canvas.width/2, cy = canvas.height/2;
-      for(let i=0; i<25; i++) {
-        snake.push({ x: cx, y: cy + i*config.segmentDist, angle: -Math.PI/2 });
+    socket.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "update") {
+        // Nhận dữ liệu toàn bộ server: { "user_123": {...}, "user_456": {...} }
+        updateWorldState(msg.data);
       }
+    };
 
-      // Tạo môi trường
-      for(let i=0; i<3; i++) spawnFood();
-      for(let i=0; i<config.mineCount; i++) spawnMine();
-    }
+    socket.onclose = () => {
+      alert("Mất kết nối với Server!");
+      location.reload();
+    };
+  }
 
-    function loop() {
-      if(!isPlaying) return;
-      requestAnimationFrame(loop);
-      
-      ctx.clearRect(0,0,canvas.width, canvas.height);
+  function initMySnake() {
+    mySnake.x = Math.random() * 1000;
+    mySnake.y = Math.random() * 1000;
+    mySnake.body = [];
+    for(let i=0; i<20; i++) mySnake.body.push({x: mySnake.x, y: mySnake.y});
+  }
 
-      // Camera Shake logic
-      let shakeX = 0, shakeY = 0;
-      if (camShake > 0) {
-        shakeX = (Math.random() - 0.5) * camShake;
-        shakeY = (Math.random() - 0.5) * camShake;
-        camShake *= 0.9; // Giảm dần độ rung
-        if(camShake < 0.5) camShake = 0;
-      }
-      
-      ctx.save();
-      ctx.translate(shakeX, shakeY);
+  function updateWorldState(serverData) {
+    // serverData chứa tất cả player. Ta cần lọc ra đâu là mình, đâu là địch.
+    // Tuy nhiên, ở bản đơn giản này, server không báo "bạn là ID nào".
+    // Mẹo: Server code ở trên dùng ID random.
+    // Để đơn giản, client sẽ vẽ TẤT CẢ dữ liệu nhận được từ server trừ chính mình
+    // (Trong thực tế, server nên gửi gói tin "Welcome" chứa ID của bạn lúc connect).
+    
+    otherSnakes = serverData; 
+  }
 
-      updateLogic();
-      draw();
-      
-      ctx.restore();
-      frameCount++;
-    }
+  // --- LOGIC GAME ---
+  window.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
 
-    function updateLogic() {
-      updateBuffs();
-      updateSnake();
-      checkCollisions();
-      
-      // Sinh đồ ngẫu nhiên
-      if(foods.length < 3) spawnFood();
-      if(frameCount % 600 === 0) spawnPowerUp(); // 10s ra 1 powerup
-      
-      updateParticles();
-    }
+  function loop() {
+    if (!isPlaying) return;
+    requestAnimationFrame(loop);
 
-    function updateBuffs() {
-      // Giảm thời gian buff
-      if(buffs.magnet > 0) buffs.magnet--;
-      if(buffs.double > 0) buffs.double--;
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Update UI
-      document.getElementById('buffMagnet').classList.toggle('active', buffs.magnet > 0);
-      document.getElementById('buffDouble').classList.toggle('active', buffs.double > 0);
-    }
+    // 1. Di chuyển bản thân
+    const dx = mouse.x - canvas.width/2; // Camera lock giữa màn hình
+    const dy = mouse.y - canvas.height/2;
+    const angle = Math.atan2(dy, dx);
+    
+    const speed = 5;
+    mySnake.x += Math.cos(angle) * speed;
+    mySnake.y += Math.sin(angle) * speed;
+    
+    // Update thân
+    mySnake.body.unshift({x: mySnake.x, y: mySnake.y});
+    if(mySnake.body.length > 50) mySnake.body.pop();
 
-    function updateSnake() {
-      const head = snake[0];
-      
-      // 1. Tính góc
-      const dx = mouse.x - head.x;
-      const dy = mouse.y - head.y;
-      const targetAngle = Math.atan2(dy, dx);
-      
-      // Làm mượt góc quay (Lerp angle)
-      let currentAngle = head.angle || 0;
-      // Xử lý lỗi quay 360 độ (ví dụ từ -3.14 sang 3.14)
-      let diff = targetAngle - currentAngle;
-      while (diff <= -Math.PI) diff += Math.PI*2;
-      while (diff > Math.PI) diff -= Math.PI*2;
-      head.angle = currentAngle + diff * config.turnSpeed;
-
-      // 2. Tốc độ (Boost)
-      let currentSpeed = config.baseSpeed;
-      
-      // Điều kiện Boost: Phải dài hơn 15 đốt mới được boost
-      if(isBoosting && snake.length > 15) {
-        currentSpeed = config.boostSpeed;
-        camShake = 3; // Rung nhẹ khi chạy
-        
-        // Thải ra hạt phía sau (hiệu ứng lửa/khói)
-        if(frameCount % 3 === 0) {
-          const tail = snake[snake.length-1];
-          createParticles(tail.x, tail.y, '#ffffff', 2);
-          
-          // Mất điểm/đốt khi chạy nhanh
-          if(frameCount % 10 === 0) {
-             snake.pop(); 
-             score = Math.max(0, score - 5);
-             scoreDisplay.innerText = score;
-          }
+    // 2. Gửi dữ liệu lên Server
+    if (socket.readyState === WebSocket.OPEN) {
+      const packet = {
+        type: "move",
+        info: {
+          x: mySnake.x,
+          y: mySnake.y,
+          body: mySnake.body.filter((_, i) => i % 2 === 0), // Gửi ít điểm hơn để giảm lag
+          name: mySnake.name,
+          color: mySnake.skin
         }
-      }
-
-      // 3. Di chuyển đầu
-      head.x += Math.cos(head.angle) * currentSpeed;
-      head.y += Math.sin(head.angle) * currentSpeed;
-
-      // 4. Kéo thân (Inverse Kinematics)
-      for(let i=1; i<snake.length; i++) {
-        const prev = snake[i-1];
-        const curr = snake[i];
-        const dX = prev.x - curr.x;
-        const dY = prev.y - curr.y;
-        const dist = Math.hypot(dX, dY);
-        
-        // Nếu xa quá thì kéo lại
-        if(dist > config.segmentDist) {
-          const t = config.segmentDist / dist;
-          curr.x = prev.x - dX * t;
-          curr.y = prev.y - dY * t;
-          curr.angle = Math.atan2(dY, dX); // Lưu góc thân để vẽ vảy/gai
-        }
-      }
+      };
+      socket.send(JSON.stringify(packet));
     }
 
-    function checkCollisions() {
-      const head = snake[0];
+    // 3. Vẽ Camera (Giả lập camera đi theo mình)
+    ctx.save();
+    ctx.translate(canvas.width/2 - mySnake.x, canvas.height/2 - mySnake.y);
 
-      // 1. Ăn thức ăn
-      for(let i=foods.length-1; i>=0; i--) {
-        const f = foods[i];
-        let dist = Math.hypot(head.x - f.x, head.y - f.y);
-        
-        // HÚT ĐỒ (Magnet)
-        if(buffs.magnet > 0 && dist < 200) {
-          f.x += (head.x - f.x) * 0.15;
-          f.y += (head.y - f.y) * 0.15;
-        }
+    // Vẽ Lưới nền
+    drawGrid();
 
-        if(dist < config.baseRadius + f.size/2) {
-          // Ăn
-          let points = 10;
-          if(buffs.double > 0) { points *= 2; createFloatingText(head.x, head.y, "x2!"); }
-          
-          score += points;
-          scoreDisplay.innerText = score;
-          
-          // Lớn lên
-          for(let k=0; k<config.growth; k++) snake.push({...snake[snake.length-1]});
-          
-          createParticles(f.x, f.y, '#00ff88', 8);
-          camShake = 5;
-          foods.splice(i,1);
-        }
-      }
-
-      // 2. Ăn Power-up
-      for(let i=powerups.length-1; i>=0; i--) {
-        const p = powerups[i];
-        if(Math.hypot(head.x - p.x, head.y - p.y) < 30) {
-          // Kích hoạt hiệu ứng
-          if(p.type === 'magnet') buffs.magnet = 600; // 10s (60fps)
-          if(p.type === 'double') buffs.double = 600;
-          
-          createFloatingText(head.x, head.y, p.label);
-          powerups.splice(i, 1);
-        }
-      }
-
-      // 3. Đụng Mìn (Chết)
-      for(let m of mines) {
-        if(Math.hypot(head.x - m.x, head.y - m.y) < m.size) {
-          triggerGameOver("Bạn đã nổ tung vì chạm mìn!");
-          return;
-        }
-      }
-
-      // 4. Cắn đuôi
-      for(let i=10; i<snake.length; i++) {
-        if(Math.hypot(head.x - snake[i].x, head.y - snake[i].y) < 10) {
-          triggerGameOver("Bạn tự cắn vào đuôi mình!");
-          return;
-        }
-      }
-
-      // 5. Đâm tường (Biên giới)
-      if(head.x < 0 || head.x > canvas.width || head.y < 0 || head.y > canvas.height) {
-        triggerGameOver("Bạn đã đâm vào tường điện!");
-        return;
-      }
+    // Vẽ Đối thủ (Từ dữ liệu Server)
+    for (const [id, data] of Object.entries(otherSnakes)) {
+        // Đây là điểm yếu của bản demo này: ta sẽ thấy bóng ma của chính mình do server gửi lại.
+        // Để khắc phục triệt để cần logic ID (xem phần lưu ý bên dưới).
+        // Tạm thời ta cứ vẽ hết để test kết nối.
+        drawSnake(data); 
     }
+    
+    // Vẽ Chính mình (đè lên để mượt hơn, không chờ server)
+    // drawSnake(mySnake); // Nếu vẽ cái này sẽ bị trùng với server trả về
 
-    /* --- SPAWNERS --- */
-    function spawnFood() {
-      foods.push({
-        x: Math.random() * (canvas.width - 50) + 25,
-        y: Math.random() * (canvas.height - 50) + 25,
-        emoji: config.fruits[Math.floor(Math.random()*config.fruits.length)],
-        size: 28,
-        rot: Math.random()
-      });
+    ctx.restore();
+  }
+
+  function drawSnake(s) {
+    if (!s.body) return;
+    ctx.fillStyle = s.color || '#fff';
+    
+    // Vẽ thân
+    for(let p of s.body) {
+      ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI*2); ctx.fill();
     }
+    // Vẽ đầu
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(s.x, s.y, 12, 0, Math.PI*2); ctx.fill();
+    
+    // Tên
+    ctx.fillStyle = "white";
+    ctx.font = "12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(s.name || "Unknown", s.x, s.y - 20);
+  }
 
-    function spawnMine() {
-      mines.push({
-        x: Math.random() * (canvas.width - 100) + 50,
-        y: Math.random() * (canvas.height - 100) + 50,
-        size: 20,
-        rot: 0
-      });
+  function drawGrid() {
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 2;
+    const gridSize = 100;
+    // Vẽ lưới đơn giản vùng rộng
+    for(let x=-2000; x<2000; x+=gridSize) {
+       ctx.beginPath(); ctx.moveTo(x, -2000); ctx.lineTo(x, 2000); ctx.stroke();
     }
-
-    function spawnPowerUp() {
-      const types = [
-        {type: 'magnet', icon: '🧲', label: 'NAM CHÂM', color: '#00ccff'},
-        {type: 'double', icon: '⚡', label: 'X2 ĐIỂM', color: '#ffd700'}
-      ];
-      const t = types[Math.floor(Math.random()*types.length)];
-      
-      powerups.push({
-        x: Math.random() * (canvas.width - 100) + 50,
-        y: Math.random() * (canvas.height - 100) + 50,
-        ...t,
-        life: 600 // Tồn tại 10s
-      });
+    for(let y=-2000; y<2000; y+=gridSize) {
+       ctx.beginPath(); ctx.moveTo(-2000, y); ctx.lineTo(2000, y); ctx.stroke();
     }
+  }
 
-    /* --- DRAWING --- */
-    function draw() {
-      // Background
-      ctx.fillStyle = '#0a0a0a';
-      ctx.fillRect(0,0,canvas.width, canvas.height);
-      drawGrid();
-
-      // Mines
-      ctx.fillStyle = '#ff4d4d';
-      ctx.shadowColor = '#ff0000';
-      ctx.shadowBlur = 15;
-      mines.forEach(m => {
-        m.rot += 0.02;
-        ctx.save();
-        ctx.translate(m.x, m.y);
-        ctx.rotate(m.rot);
-        // Vẽ mìn gai
-        ctx.beginPath();
-        for(let i=0; i<8; i++) {
-           ctx.rotate(Math.PI/4);
-           ctx.moveTo(0, -m.size);
-           ctx.lineTo(5, -5);
-           ctx.lineTo(0, 0);
-           ctx.lineTo(-5, -5);
-        }
-        ctx.fill();
-        // Lõi mìn
-        ctx.fillStyle = '#500';
-        ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fill();
-        ctx.restore();
-      });
-
-      // Powerups
-      powerups.forEach(p => {
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 20;
-        ctx.font = "30px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        // Hiệu ứng nảy
-        const bounce = Math.sin(frameCount * 0.1) * 5;
-        ctx.fillText(p.icon, p.x, p.y + bounce);
-        
-        // Vòng tròn đếm ngược
-        ctx.beginPath();
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = 3;
-        ctx.arc(p.x, p.y + bounce, 25, 0, (p.life/600)*Math.PI*2);
-        ctx.stroke();
-        
-        p.life--;
-      });
-      // Xóa powerup hết hạn
-      powerups = powerups.filter(p => p.life > 0);
-
-      // Foods
-      ctx.shadowBlur = 0;
-      foods.forEach(f => {
-        ctx.font = `${f.size}px Arial`;
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(f.emoji, f.x, f.y);
-      });
-
-      // Snake
-      drawSnake();
-
-      // Particles
-      drawParticles();
-    }
-
-    function drawSnake() {
-      // Vẽ thân (Neon effect)
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      
-      // Glow layer
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = isBoosting ? '#00ffff' : config.snakeShadow;
-      
-      for(let i=snake.length-1; i>=0; i--) {
-        const s = snake[i];
-        const rad = config.baseRadius + (1 - i/snake.length)*4;
-        
-        ctx.beginPath();
-        // Màu chuyển từ xanh -> xanh dương
-        const hue = (140 + i * 2) % 360;
-        ctx.fillStyle = isBoosting ? `hsl(${hue}, 100%, 70%)` : `hsl(${hue}, 100%, 50%)`;
-        
-        ctx.arc(s.x, s.y, rad, 0, Math.PI*2);
-        ctx.fill();
-      }
-      
-      // Vẽ Đầu
-      const head = snake[0];
-      ctx.fillStyle = '#fff';
-      ctx.shadowBlur = 30;
-      ctx.beginPath(); ctx.arc(head.x, head.y, config.baseRadius+2, 0, Math.PI*2); ctx.fill();
-      ctx.shadowBlur = 0;
-
-      // Mắt
-      const eyeOff = 8;
-      const ang = head.angle;
-      const ex1 = head.x + Math.cos(ang-0.6)*eyeOff;
-      const ey1 = head.y + Math.sin(ang-0.6)*eyeOff;
-      const ex2 = head.x + Math.cos(ang+0.6)*eyeOff;
-      const ey2 = head.y + Math.sin(ang+0.6)*eyeOff;
-      
-      ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.arc(ex1, ey1, 3, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(ex2, ey2, 3, 0, Math.PI*2); ctx.fill();
-    }
-
-    function drawGrid() {
-      ctx.strokeStyle = '#1f2937';
-      ctx.lineWidth = 1;
-      const offX = frameCount % config.gridSize; // Hiệu ứng cuộn nền nhẹ
-      for(let x=0; x<canvas.width; x+=config.gridSize) {
-        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
-      }
-      for(let y=0; y<canvas.height; y+=config.gridSize) {
-        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
-      }
-    }
-
-    /* --- PARTICLES & EFFECTS --- */
-    function createParticles(x, y, color, count) {
-      for(let i=0; i<count; i++) {
-        particles.push({
-          x: x, y: y,
-          vx: (Math.random()-0.5)*5,
-          vy: (Math.random()-0.5)*5,
-          life: 1,
-          color: color
-        });
-      }
-    }
-    function createFloatingText(x, y, text) {
-      // Dùng hạt đặc biệt để làm text bay
-      particles.push({
-         x: x, y: y - 20, vx: 0, vy: -1, life: 1.5, 
-         isText: true, text: text, color: '#fff'
-      });
-    }
-
-    function updateParticles() {
-      for(let i=particles.length-1; i>=0; i--) {
-        let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= 0.02;
-        if(p.life <= 0) particles.splice(i,1);
-      }
-    }
-
-    function drawParticles() {
-      particles.forEach(p => {
-        ctx.globalAlpha = p.life;
-        if(p.isText) {
-           ctx.font = "bold 20px Arial";
-           ctx.fillStyle = p.color;
-           ctx.fillText(p.text, p.x, p.y);
-        } else {
-           ctx.fillStyle = p.color;
-           ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      });
-    }
-
-    /* --- GAME OVER & LEADERBOARD --- */
-    function triggerGameOver(reason) {
-      isPlaying = false;
-      camShake = 10;
-      draw(); // Vẽ frame cuối
-      
-      deathMsg.innerText = reason;
-      finalScoreDisplay.innerText = score;
-      saveHighScore(currentPlayer, score);
-      renderLeaderboard();
-      
-      uiGameOver.classList.add('active');
-    }
-
-    function saveHighScore(name, score) {
-      let list = JSON.parse(localStorage.getItem('snake_pro_scores')) || [];
-      list.push({name, score});
-      list.sort((a,b) => b.score - a.score);
-      localStorage.setItem('snake_pro_scores', JSON.stringify(list.slice(0,5)));
-    }
-
-    function renderLeaderboard() {
-      const list = JSON.parse(localStorage.getItem('snake_pro_scores')) || [];
-      const el = document.getElementById('leaderboardList');
-      el.innerHTML = list.length ? '' : '<div style="color:#888; text-align:center">Chưa có kỷ lục</div>';
-      list.forEach((item, i) => {
-        el.innerHTML += `
-          <div class="lb-row">
-            <div><span class="lb-rank">#${i+1}</span> ${item.name}</div>
-            <span class="lb-score">${item.score}</span>
-          </div>`;
-      });
-    }
-  </script>
+</script>
 </body>
 </html>
