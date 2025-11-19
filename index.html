@@ -2,187 +2,406 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Snake Online Multiplayer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Online - Client</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    /* Giữ nguyên CSS cũ hoặc tùy chỉnh thêm */
-    body { margin: 0; background: #0a0a0a; overflow: hidden; color: white; font-family: sans-serif; }
+    :root {
+      --primary: #00ff88;
+      --bg: #0a0a0a;
+    }
+
+    * { box-sizing: border-box; user-select: none; }
+
+    body {
+      margin: 0;
+      background-color: var(--bg);
+      color: white;
+      font-family: 'Poppins', sans-serif;
+      overflow: hidden;
+    }
+
     canvas { display: block; }
-    .ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-    button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #00ff88; border: none; border-radius: 5px; }
-    input { padding: 10px; font-size: 1.1rem; margin-bottom: 10px; }
+
+    /* UI LAYERS */
+    .ui-layer {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 10;
+      display: flex; justify-content: center; align-items: center;
+      pointer-events: none;
+    }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(15px);
+      padding: 2rem;
+      border-radius: 20px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 50px rgba(0,0,0,0.8);
+      pointer-events: auto;
+      display: flex; flex-direction: column; gap: 15px;
+      min-width: 350px;
+    }
+
+    h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: 2.5rem; margin: 0;
+      background: linear-gradient(to right, #00ff88, #00ccff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    input {
+      padding: 12px; border-radius: 8px; border: 2px solid #333;
+      background: #050505; color: white; font-size: 1.1rem; text-align: center;
+      outline: none; transition: 0.3s;
+    }
+    input:focus { border-color: var(--primary); }
+
+    .skin-selector {
+      display: flex; justify-content: center; gap: 10px; margin: 10px 0;
+    }
+    .skin-btn {
+      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: transform 0.2s;
+    }
+    .skin-btn.selected { border-color: white; transform: scale(1.2); }
+
+    button {
+      background: linear-gradient(90deg, #00ff88, #00cc6a);
+      color: #000; border: none; padding: 12px;
+      font-size: 1.2rem; font-weight: 800; border-radius: 50px;
+      cursor: pointer; transition: 0.2s;
+    }
+    button:hover { transform: scale(1.05); filter: brightness(1.1); }
+
+    /* STATUS INDICATOR */
+    .status-bar {
+      position: absolute; top: 10px; right: 10px;
+      font-size: 0.8rem; font-weight: bold;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 20px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+    .dot.green { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+    .dot.red { background: #ff4d4d; }
+
   </style>
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-<div id="startScreen" class="ui">
-  <h1>SNAKE ONLINE (PYTHON SERVER)</h1>
-  <input type="text" id="username" placeholder="Nhập tên..." value="Player1">
-  <br>
-  <button onclick="joinGame()">THAM GIA</button>
-  <p style="color: #888; font-size: 0.9rem">Đảm bảo chạy server.py trước!</p>
-</div>
+  <div class="status-bar">
+    Server: <div id="statusDot" class="dot red"></div> <span id="statusText">Disconnected</span>
+  </div>
 
-<script>
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  <div class="ui-layer" id="uiLayer">
+    <div id="startScreen" class="panel">
+      <h1>SNAKE ONLINE</h1>
+      <p style="color:#aaa; margin:0; font-size: 0.9rem">Yêu cầu chạy server.py trước</p>
+      
+      <input type="text" id="nameInput" placeholder="Nhập tên của bạn..." maxlength="12" value="Player">
+      
+      <div style="color: #ccc; font-size: 0.9rem;">Chọn màu skin:</div>
+      <div class="skin-selector" id="skinContainer">
+        </div>
 
-  // --- CẤU HÌNH ---
-  const WEBSOCKET_URL = "ws://localhost:8765"; 
-  
-  // --- TRẠNG THÁI GAME ---
-  let socket;
-  let myId = null; // Server không cần gửi ID về, ta tự quản lý qua kết nối, nhưng client cần biết ID của địch
-  let isPlaying = false;
-  
-  let mySnake = { x: 500, y: 500, angle: 0, body: [], name: "", skin: "#00ff88" };
-  let otherSnakes = {}; // Lưu đối thủ: { "user_1234": {x, y, body...} }
-  
-  let mouse = { x: 0, y: 0 };
+      <button onclick="joinGame()">THAM GIA GAME</button>
+    </div>
+  </div>
 
-  // --- KẾT NỐI SOCKET ---
-  function joinGame() {
-    const name = document.getElementById('username').value;
-    mySnake.name = name;
-
-    socket = new WebSocket(WEBSOCKET_URL);
-
-    socket.onopen = () => {
-      console.log("Đã kết nối tới Server Python!");
-      document.getElementById('startScreen').style.display = 'none';
-      isPlaying = true;
-      initMySnake();
-      loop();
+  <script>
+    /* --- CẤU HÌNH & BIẾN TOÀN CỤC --- */
+    const CONFIG = {
+      serverUrl: "ws://localhost:8765", // Địa chỉ Python Server
+      gridSize: 100,
+      worldSize: 2000
     };
 
-    socket.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      if (msg.type === "update") {
-        // Nhận dữ liệu toàn bộ server: { "user_123": {...}, "user_456": {...} }
-        updateWorldState(msg.data);
-      }
+    const SKINS = [
+      { color: '#00ff88', name: 'Green' },
+      { color: '#00ccff', name: 'Blue' },
+      { color: '#ff4d4d', name: 'Red' },
+      { color: '#ffd700', name: 'Gold' },
+      { color: '#b300ff', name: 'Purple' }
+    ];
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let socket;
+    let isConnected = false;
+    let isPlaying = false;
+    
+    // Tạo ID duy nhất cho Client này để tránh vẽ lại chính mình từ dữ liệu server (Ghosting)
+    const MY_CLIENT_ID = "client_" + Math.floor(Math.random() * 1000000);
+
+    let mySnake = {
+      id: MY_CLIENT_ID,
+      x: 500, y: 500,
+      angle: 0,
+      body: [],
+      name: "Player",
+      skin: SKINS[0].color
     };
-
-    socket.onclose = () => {
-      alert("Mất kết nối với Server!");
-      location.reload();
-    };
-  }
-
-  function initMySnake() {
-    mySnake.x = Math.random() * 1000;
-    mySnake.y = Math.random() * 1000;
-    mySnake.body = [];
-    for(let i=0; i<20; i++) mySnake.body.push({x: mySnake.x, y: mySnake.y});
-  }
-
-  function updateWorldState(serverData) {
-    // serverData chứa tất cả player. Ta cần lọc ra đâu là mình, đâu là địch.
-    // Tuy nhiên, ở bản đơn giản này, server không báo "bạn là ID nào".
-    // Mẹo: Server code ở trên dùng ID random.
-    // Để đơn giản, client sẽ vẽ TẤT CẢ dữ liệu nhận được từ server trừ chính mình
-    // (Trong thực tế, server nên gửi gói tin "Welcome" chứa ID của bạn lúc connect).
     
-    otherSnakes = serverData; 
-  }
+    let otherSnakes = {}; // Dữ liệu nhận từ server
+    let mouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+    let camera = { x: 0, y: 0 };
 
-  // --- LOGIC GAME ---
-  window.addEventListener('mousemove', e => {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-  });
-
-  function loop() {
-    if (!isPlaying) return;
-    requestAnimationFrame(loop);
-
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 1. Di chuyển bản thân
-    const dx = mouse.x - canvas.width/2; // Camera lock giữa màn hình
-    const dy = mouse.y - canvas.height/2;
-    const angle = Math.atan2(dy, dx);
+    /* --- KHỞI TẠO UI --- */
+    let selectedSkin = SKINS[0].color;
+    const skinContainer = document.getElementById('skinContainer');
     
-    const speed = 5;
-    mySnake.x += Math.cos(angle) * speed;
-    mySnake.y += Math.sin(angle) * speed;
-    
-    // Update thân
-    mySnake.body.unshift({x: mySnake.x, y: mySnake.y});
-    if(mySnake.body.length > 50) mySnake.body.pop();
+    SKINS.forEach(s => {
+      const btn = document.createElement('div');
+      btn.className = 'skin-btn';
+      btn.style.backgroundColor = s.color;
+      if(s.color === selectedSkin) btn.classList.add('selected');
+      
+      btn.onclick = () => {
+        document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedSkin = s.color;
+      };
+      skinContainer.appendChild(btn);
+    });
 
-    // 2. Gửi dữ liệu lên Server
-    if (socket.readyState === WebSocket.OPEN) {
-      const packet = {
-        type: "move",
-        info: {
-          x: mySnake.x,
-          y: mySnake.y,
-          body: mySnake.body.filter((_, i) => i % 2 === 0), // Gửi ít điểm hơn để giảm lag
-          name: mySnake.name,
-          color: mySnake.skin
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', e => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+
+    /* --- MẠNG & WEBSOCKET --- */
+    function connectToServer() {
+      updateStatus('Connecting...', 'red');
+      socket = new WebSocket(CONFIG.serverUrl);
+
+      socket.onopen = () => {
+        console.log("Connected to Python Server");
+        isConnected = true;
+        updateStatus('Connected', 'green');
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "update") {
+            // msg.data là object { "socket_id": {snake_data}, ... }
+            otherSnakes = msg.data;
+          }
+        } catch (e) { console.error(e); }
+      };
+
+      socket.onclose = () => {
+        isConnected = false;
+        updateStatus('Disconnected', 'red');
+        if(isPlaying) {
+            alert("Mất kết nối máy chủ!");
+            location.reload();
         }
       };
-      socket.send(JSON.stringify(packet));
+      
+      socket.onerror = () => {
+        updateStatus('Error', 'red');
+      };
     }
 
-    // 3. Vẽ Camera (Giả lập camera đi theo mình)
-    ctx.save();
-    ctx.translate(canvas.width/2 - mySnake.x, canvas.height/2 - mySnake.y);
-
-    // Vẽ Lưới nền
-    drawGrid();
-
-    // Vẽ Đối thủ (Từ dữ liệu Server)
-    for (const [id, data] of Object.entries(otherSnakes)) {
-        // Đây là điểm yếu của bản demo này: ta sẽ thấy bóng ma của chính mình do server gửi lại.
-        // Để khắc phục triệt để cần logic ID (xem phần lưu ý bên dưới).
-        // Tạm thời ta cứ vẽ hết để test kết nối.
-        drawSnake(data); 
+    function updateStatus(text, colorClass) {
+      document.getElementById('statusText').innerText = text;
+      const dot = document.getElementById('statusDot');
+      dot.className = 'dot ' + colorClass;
     }
-    
-    // Vẽ Chính mình (đè lên để mượt hơn, không chờ server)
-    // drawSnake(mySnake); // Nếu vẽ cái này sẽ bị trùng với server trả về
 
-    ctx.restore();
-  }
-
-  function drawSnake(s) {
-    if (!s.body) return;
-    ctx.fillStyle = s.color || '#fff';
-    
-    // Vẽ thân
-    for(let p of s.body) {
-      ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI*2); ctx.fill();
+    function sendData() {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        // Gửi dữ liệu lên server
+        // Server Python chỉ làm nhiệm vụ broadcast, nó không quan tâm cấu trúc
+        // Ta gửi kèm MY_CLIENT_ID để khi nhận về ta biết cái nào là của mình
+        const payload = {
+          type: "move",
+          info: {
+            id: MY_CLIENT_ID, // Quan trọng: để lọc ghost
+            x: mySnake.x,
+            y: mySnake.y,
+            body: mySnake.body.filter((_, i) => i % 3 === 0), // Chỉ gửi 1/3 số đốt để giảm lag
+            name: mySnake.name,
+            skin: mySnake.skin
+          }
+        };
+        socket.send(JSON.stringify(payload));
+      }
     }
-    // Vẽ đầu
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(s.x, s.y, 12, 0, Math.PI*2); ctx.fill();
-    
-    // Tên
-    ctx.fillStyle = "white";
-    ctx.font = "12px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(s.name || "Unknown", s.x, s.y - 20);
-  }
 
-  function drawGrid() {
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 2;
-    const gridSize = 100;
-    // Vẽ lưới đơn giản vùng rộng
-    for(let x=-2000; x<2000; x+=gridSize) {
-       ctx.beginPath(); ctx.moveTo(x, -2000); ctx.lineTo(x, 2000); ctx.stroke();
-    }
-    for(let y=-2000; y<2000; y+=gridSize) {
-       ctx.beginPath(); ctx.moveTo(-2000, y); ctx.lineTo(2000, y); ctx.stroke();
-    }
-  }
+    /* --- GAME LOOP --- */
+    function joinGame() {
+      if(!isConnected) {
+        alert("Chưa kết nối được Server! Hãy kiểm tra server.py");
+        connectToServer(); // Thử lại
+        return;
+      }
+      
+      const name = document.getElementById('nameInput').value || "Unknown";
+      mySnake.name = name;
+      mySnake.skin = selectedSkin;
+      mySnake.x = Math.random() * 1000 + 500;
+      mySnake.y = Math.random() * 1000 + 500;
+      
+      // Init body
+      mySnake.body = [];
+      for(let i=0; i<20; i++) mySnake.body.push({x: mySnake.x, y: mySnake.y});
 
-</script>
+      document.getElementById('uiLayer').style.display = 'none';
+      isPlaying = true;
+      loop();
+    }
+
+    function loop() {
+      if(!isPlaying) return;
+      requestAnimationFrame(loop);
+
+      updateLocalSnake();
+      sendData(); // Gửi vị trí
+      render();
+    }
+
+    function updateLocalSnake() {
+      // Tính góc quay dựa trên chuột (so với tâm màn hình)
+      const dx = mouse.x - window.innerWidth / 2;
+      const dy = mouse.y - window.innerHeight / 2;
+      const angle = Math.atan2(dy, dx);
+      mySnake.angle = angle;
+
+      // Di chuyển
+      const speed = 5;
+      mySnake.x += Math.cos(angle) * speed;
+      mySnake.y += Math.sin(angle) * speed;
+
+      // Cập nhật thân rắn (Logic rắn chạy)
+      mySnake.body.unshift({ x: mySnake.x, y: mySnake.y });
+      if (mySnake.body.length > 30) mySnake.body.pop();
+
+      // Camera bám theo người chơi
+      // Dùng linear interpolation (lerp) cho mượt
+      camera.x += (mySnake.x - window.innerWidth/2 - camera.x) * 0.1;
+      camera.y += (mySnake.y - window.innerHeight/2 - camera.y) * 0.1;
+    }
+
+    /* --- RENDERING --- */
+    function render() {
+      // Xóa màn hình
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      // Dịch chuyển khung hình theo camera
+      ctx.translate(-camera.x, -camera.y);
+
+      // 1. Vẽ Lưới nền (World Grid)
+      drawGrid();
+
+      // 2. Vẽ Người chơi khác (Online)
+      for (const key in otherSnakes) {
+        const snakeData = otherSnakes[key];
+        
+        // QUAN TRỌNG: Nếu ID nhận về trùng với ID của mình -> Bỏ qua (Không vẽ bóng ma)
+        if (snakeData.id === MY_CLIENT_ID) continue;
+
+        drawSnake(snakeData, false);
+      }
+
+      // 3. Vẽ Chính mình (Local)
+      // Vẽ sau cùng để luôn đè lên trên
+      drawSnake(mySnake, true);
+
+      ctx.restore();
+    }
+
+    function drawSnake(snake, isMe) {
+      if (!snake.body) return;
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // Bóng đổ (Glow)
+      ctx.shadowBlur = isMe ? 20 : 10;
+      ctx.shadowColor = snake.skin;
+
+      // Vẽ thân
+      ctx.beginPath();
+      const body = snake.body;
+      // Nếu là online data (đã bị lọc bớt đốt), ta nối đường
+      // Nếu là local data, ta vẽ từng đốt tròn
+      
+      if(isMe) {
+          for(let i=body.length-1; i>=0; i-=1) {
+            const p = body[i];
+            const size = 12 + (1 - i/body.length)*2;
+            ctx.fillStyle = snake.skin;
+            ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill();
+          }
+      } else {
+          // Vẽ rắn đối thủ (nối dây cho mượt vì dữ liệu ít)
+          ctx.lineWidth = 24;
+          ctx.strokeStyle = snake.skin;
+          ctx.beginPath();
+          if(body.length > 0) ctx.moveTo(body[0].x, body[0].y);
+          for(let i=1; i<body.length; i++) {
+             ctx.lineTo(body[i].x, body[i].y);
+          }
+          ctx.stroke();
+      }
+
+      // Vẽ đầu
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(snake.x, snake.y, isMe?14:13, 0, Math.PI*2); ctx.fill();
+
+      // Vẽ Tên
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'white';
+      ctx.font = "bold 14px Poppins";
+      ctx.textAlign = "center";
+      ctx.fillText(snake.name, snake.x, snake.y - 25);
+    }
+
+    function drawGrid() {
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 2;
+      
+      // Vẽ lưới trong vùng camera nhìn thấy để tối ưu
+      const startX = Math.floor(camera.x / CONFIG.gridSize) * CONFIG.gridSize;
+      const endX = startX + window.innerWidth + CONFIG.gridSize;
+      const startY = Math.floor(camera.y / CONFIG.gridSize) * CONFIG.gridSize;
+      const endY = startY + window.innerHeight + CONFIG.gridSize;
+
+      ctx.beginPath();
+      for (let x = startX; x < endX; x += CONFIG.gridSize) {
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, endY);
+      }
+      for (let y = startY; y < endY; y += CONFIG.gridSize) {
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+      }
+      ctx.stroke();
+      
+      // Vẽ biên giới thế giới
+      ctx.strokeStyle = '#ff4d4d';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(0, 0, CONFIG.worldSize, CONFIG.worldSize);
+    }
+
+    // Thử kết nối ngay khi tải trang
+    connectToServer();
+
+  </script>
 </body>
 </html>
