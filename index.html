@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rắn Săn Mồi - Chuột</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #050505;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #f8f8f8;
+    }
+    canvas {
+      display: block;
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 5, 5, 0.8);
+      flex-direction: column;
+      gap: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      text-align: center;
+    }
+    .overlay.visible {
+      pointer-events: auto;
+      opacity: 1;
+    }
+    button {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 999px;
+      background: #f7a531;
+      color: #050505;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      filter: brightness(1.05);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="overlay" class="overlay">
+    <h1>Bạn đã tự cắn đuôi!</h1>
+    <p>Bấm nút dưới để chơi lại.</p>
+    <button id="restart">Chơi lại</button>
+  </div>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const overlay = document.getElementById("overlay");
+    const restartBtn = document.getElementById("restart");
+
+    const settings = {
+      speed: 4,
+      segmentDistance: 18,
+      initialSegments: 15,
+      growthPerFood: 6,
+      foodRadius: 12
+    };
+
+    let pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let snake = [];
+    let food = null;
+    let gameOver = false;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function initSnake() {
+      snake = [];
+      const start = { x: canvas.width / 2, y: canvas.height / 2 };
+      for (let i = 0; i < settings.initialSegments; i++) {
+        snake.push({ x: start.x - i * settings.segmentDistance, y: start.y });
+      }
+    }
+
+    function spawnFood() {
+      const margin = 40;
+      food = {
+        x: margin + Math.random() * (canvas.width - 2 * margin),
+        y: margin + Math.random() * (canvas.height - 2 * margin)
+      };
+    }
+
+    function distance(a, b) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      return Math.hypot(dx, dy);
+    }
+
+    function updatePointer(e) {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!gameOver) {
+        moveSnake();
+        checkFood();
+        checkSelfCollision();
+      }
+
+      drawFood();
+      drawSnake();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function moveSnake() {
+      const head = snake[0];
+      let dx = pointer.x - head.x;
+      let dy = pointer.y - head.y;
+      const dist = Math.hypot(dx, dy) || 1;
+
+      const moveX = (dx / dist) * settings.speed;
+      const moveY = (dy / dist) * settings.speed;
+
+      head.x += moveX;
+      head.y += moveY;
+
+      for (let i = 1; i < snake.length; i++) {
+        const prev = snake[i - 1];
+        const segment = snake[i];
+        dx = prev.x - segment.x;
+        dy = prev.y - segment.y;
+        const segDist = Math.hypot(dx, dy) || 1;
+        const desired = segDist - settings.segmentDistance;
+        if (desired > 0) {
+          segment.x += (dx / segDist) * desired;
+          segment.y += (dy / segDist) * desired;
+        }
+      }
+    }
+
+    function drawSnake() {
+      for (let i = snake.length - 1; i >= 0; i--) {
+        const part = snake[i];
+        const t = i / snake.length;
+        const radius = 6 + (1 - t) * 8;
+        ctx.beginPath();
+        ctx.fillStyle = `hsl(${140 - t * 40}, 80%, ${40 + t * 30}%)`;
+        ctx.arc(part.x, part.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawFood() {
+      if (!food) return;
+      ctx.beginPath();
+      ctx.fillStyle = "#ff4d6d";
+      ctx.shadowColor = "#ff99aa";
+      ctx.shadowBlur = 12;
+      ctx.arc(food.x, food.y, settings.foodRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    function checkFood() {
+      if (!food) return;
+      if (distance(snake[0], food) < settings.foodRadius + 8) {
+        for (let i = 0; i < settings.growthPerFood; i++) {
+          const tail = snake[snake.length - 1];
+          snake.push({ x: tail.x, y: tail.y });
+        }
+        spawnFood();
+      }
+    }
+
+    function checkSelfCollision() {
+      const head = snake[0];
+      for (let i = 8; i < snake.length; i++) {
+        if (distance(head, snake[i]) < 10) {
+          triggerGameOver();
+          break;
+        }
+      }
+    }
+
+    function triggerGameOver() {
+      gameOver = true;
+      overlay.classList.add("visible");
+    }
+
+    function resetGame() {
+      gameOver = false;
+      overlay.classList.remove("visible");
+      initSnake();
+      spawnFood();
+    }
+
+    window.addEventListener("mousemove", updatePointer);
+    window.addEventListener("resize", resizeCanvas);
+    restartBtn.addEventListener("click", resetGame);
+
+    resizeCanvas();
+    initSnake();
+    spawnFood();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
+
